@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://smart-log-analyzer-p83w.onrender.com",
 });
 
 export const getLogs = async () => {
