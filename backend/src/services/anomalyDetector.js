@@ -3,9 +3,7 @@ const calculateAnomalyScore = (log) => {
 
   const reasons = [];
 
-  // -----------------------------------------
-  // HTTP STATUS ANALYSIS
-  // -----------------------------------------
+ // HTTP STATUS ANALYSIS
 
   if (log.status >= 500) {
     score += 40;
@@ -22,9 +20,9 @@ const calculateAnomalyScore = (log) => {
     );
   }
 
-  // -----------------------------------------
+
   // SEVERITY ANALYSIS
-  // -----------------------------------------
+  
 
   if (log.severity === "CRITICAL") {
     score += 40;
@@ -66,9 +64,7 @@ const calculateAnomalyScore = (log) => {
     );
   }
 
-  // -----------------------------------------
   // FINAL DECISION
-  // -----------------------------------------
 
   const isAnomaly = score >= 50;
 

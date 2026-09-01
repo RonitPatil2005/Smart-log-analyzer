@@ -1,11 +1,11 @@
-const OpenAI = require("openai");
+import { GoogleGenAI } from "@google/genai";
 
 // =========================================
-// OPENAI CLIENT
+// GEMINI CLIENT
 // =========================================
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+const client = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
 });
 
 // =========================================
@@ -14,20 +14,20 @@ const client = new OpenAI({
 
 const analyzeAnomaly = async (log) => {
   try {
-
     console.log("=================================");
-    console.log("Starting AI analysis");
+    console.log("Starting Gemini AI analysis");
     console.log("Log ID:", log._id);
+
     console.log(
       "Model:",
-      process.env.OPENAI_MODEL || "gpt-5.6-luna"
+      process.env.GEMINI_MODEL || "gemini-3.6-flash"
     );
+
     console.log("=================================");
 
     // -----------------------------------------
-    // IMPORTANT
     // AI DOES NOT DETECT THE ANOMALY.
-    // Our algorithm already detected it.
+    // OUR ALGORITHM ALREADY DETECTED IT.
     // -----------------------------------------
 
     const prompt = `
@@ -45,6 +45,7 @@ Your job is to:
 
 Use only the information available in the log.
 Do not invent facts.
+
 If the exact root cause cannot be known from the log, clearly state that it is a likely hypothesis.
 
 Detected anomaly information:
@@ -77,97 +78,80 @@ Detection Reason:
 ${log.anomalyReason || "Not specified"}
 `;
 
-    // -----------------------------------------
-    // OPENAI RESPONSES API
-    // -----------------------------------------
+    // =========================================
+    // GEMINI API
+    // =========================================
 
-    const response = await client.responses.create({
-
+    const response = await client.models.generateContent({
       model:
-        process.env.OPENAI_MODEL ||
-        "gpt-5.6-luna",
+        process.env.GEMINI_MODEL ||
+        "gemini-3.6-flash",
 
-      input: prompt,
+      contents: prompt,
 
-      // ---------------------------------------
-      // Structured output
-      // ---------------------------------------
+      // -----------------------------------------
+      // STRUCTURED JSON OUTPUT
+      // -----------------------------------------
 
-      text: {
-        format: {
-          type: "json_schema",
+      config: {
+        responseMimeType: "application/json",
 
-          name: "anomaly_analysis",
+        responseSchema: {
+          type: "object",
 
-          strict: true,
-
-          schema: {
-            type: "object",
-
-            properties: {
-
-              explanation: {
-                type: "string"
-              },
-
-              likelyRootCause: {
-                type: "string"
-              },
-
-              recommendedNextStep: {
-                type: "string"
-              }
-
+          properties: {
+            explanation: {
+              type: "string",
             },
 
-            required: [
-              "explanation",
-              "likelyRootCause",
-              "recommendedNextStep"
-            ],
+            likelyRootCause: {
+              type: "string",
+            },
 
-            additionalProperties: false
-          }
-        }
-      }
+            recommendedNextStep: {
+              type: "string",
+            },
+          },
 
+          required: [
+            "explanation",
+            "likelyRootCause",
+            "recommendedNextStep",
+          ],
+        },
+      },
     });
 
-    console.log(
-      "OpenAI response received"
-    );
+    console.log("Gemini response received");
 
-    // -----------------------------------------
-    // Get structured output
-    // -----------------------------------------
+    // =========================================
+    // GET GEMINI OUTPUT
+    // =========================================
 
-    const output = response.output_text;
+    const output = response.text;
 
     console.log("AI output:");
     console.log(output);
 
     if (!output) {
-
       throw new Error(
-        "OpenAI returned an empty response"
+        "Gemini returned an empty response"
       );
-
     }
 
-    // -----------------------------------------
-    // Parse JSON
-    // -----------------------------------------
+    // =========================================
+    // PARSE JSON
+    // =========================================
 
     let parsed;
 
     try {
-
       parsed = JSON.parse(output);
 
     } catch (error) {
 
       console.error(
-        "AI JSON parsing failed"
+        "Gemini JSON parsing failed"
       );
 
       console.error(
@@ -176,33 +160,29 @@ ${log.anomalyReason || "Not specified"}
       );
 
       throw new Error(
-        "AI returned invalid JSON"
+        "Gemini returned invalid JSON"
       );
-
     }
 
-    // -----------------------------------------
-    // Validate fields
-    // -----------------------------------------
+    // =========================================
+    // VALIDATE REQUIRED FIELDS
+    // =========================================
 
     if (
       typeof parsed.explanation !== "string" ||
       typeof parsed.likelyRootCause !== "string" ||
       typeof parsed.recommendedNextStep !== "string"
     ) {
-
       throw new Error(
-        "AI response is missing required fields"
+        "Gemini response is missing required fields"
       );
-
     }
 
-    // -----------------------------------------
-    // Return clean result
-    // -----------------------------------------
+    // =========================================
+    // RETURN CLEAN RESULT
+    // =========================================
 
     return {
-
       explanation:
         parsed.explanation.trim(),
 
@@ -210,14 +190,13 @@ ${log.anomalyReason || "Not specified"}
         parsed.likelyRootCause.trim(),
 
       recommendedNextStep:
-        parsed.recommendedNextStep.trim()
-
+        parsed.recommendedNextStep.trim(),
     };
 
   } catch (error) {
 
     console.error("=================================");
-    console.error("OPENAI ANALYSIS ERROR");
+    console.error("GEMINI ANALYSIS ERROR");
     console.error("=================================");
 
     console.error(
@@ -226,33 +205,22 @@ ${log.anomalyReason || "Not specified"}
     );
 
     if (error.status) {
-
       console.error(
         "Status:",
         error.status
       );
-
     }
 
     if (error.code) {
-
       console.error(
         "Code:",
         error.code
       );
-
     }
 
-    if (error.type) {
-
-      console.error(
-        "Type:",
-        error.type
-      );
-
-    }
-
-    console.error("=================================");
+    console.error(
+      "================================="
+    );
 
     throw error;
   }
@@ -262,6 +230,6 @@ ${log.anomalyReason || "Not specified"}
 // EXPORT
 // =========================================
 
-module.exports = {
-  analyzeAnomaly
+export {
+  analyzeAnomaly,
 };
