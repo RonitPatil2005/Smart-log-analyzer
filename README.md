@@ -7,7 +7,7 @@ The application uses a **React frontend**, **Node.js and Express backend**, **Mo
 ---
 
 ## 🌐 Live Demo :  
-https://smart-log-analyzer-j8g8gm5xb-ronit-patil-s-projects.vercel.app/
+https://smart-log-analyzer-six.vercel.app/
 
 
 ## 📌 Project Overview
