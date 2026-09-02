@@ -12,6 +12,7 @@ import LogDetails from "./components/LogDetails.jsx";
 import "./App.css";
 
 function App() {
+
   // ========================================
   // STATE
   // ========================================
@@ -42,30 +43,86 @@ function App() {
   const [anomalyFilter, setAnomalyFilter] =
     useState("ALL");
 
+
   // ========================================
   // LOAD LOGS
   // ========================================
 
   useEffect(() => {
+
     const loadLogs = async () => {
+
       try {
+
         const result = await getLogs();
 
-        setLogs(result.data || []);
+        const fetchedLogs =
+          result.data || [];
+
+        // ------------------------------------
+        // RESTORE AI ANALYSIS FROM SESSION
+        // STORAGE
+        // ------------------------------------
+
+        const logsWithAnalysis =
+          fetchedLogs.map((log) => {
+
+            const savedAnalysis =
+              sessionStorage.getItem(
+                `ai-analysis-${log._id}`
+              );
+
+            if (savedAnalysis) {
+
+              try {
+
+                const aiAnalysis =
+                  JSON.parse(savedAnalysis);
+
+                return {
+                  ...log,
+                  aiAnalysis
+                };
+
+              } catch (error) {
+
+                console.error(
+                  "Failed to restore AI analysis:",
+                  error
+                );
+
+                return log;
+
+              }
+
+            }
+
+            return log;
+
+          });
+
+        setLogs(logsWithAnalysis);
 
       } catch (err) {
+
         console.error(err);
 
         setError(
           "Unable to load logs."
         );
+
       } finally {
+
         setLoading(false);
+
       }
+
     };
 
     loadLogs();
+
   }, []);
+
 
   // ========================================
   // FILTER LOGS
@@ -74,16 +131,12 @@ function App() {
   const filteredLogs = logs.filter(
     (log) => {
 
-      // ------------------------------------
-      // SEARCH
-      // ------------------------------------
-
       const searchValue =
-        `${log.source || ""} 
-        ${log.eventType || ""} 
-        ${log.status || ""} 
-        ${log.severity || ""} 
-        ${log.message || ""} 
+        `${log.source || ""}
+        ${log.eventType || ""}
+        ${log.status || ""}
+        ${log.severity || ""}
+        ${log.message || ""}
         ${log.ipAddress || ""}`
           .toLowerCase();
 
@@ -92,42 +145,43 @@ function App() {
           search.toLowerCase()
         );
 
-      // ------------------------------------
-      // SEVERITY
-      // ------------------------------------
-
       const matchesSeverity =
         severityFilter === "ALL" ||
         log.severity === severityFilter;
 
-      // ------------------------------------
-      // ANOMALY
-      // ------------------------------------
-
       const matchesAnomaly =
         anomalyFilter === "ALL" ||
-        (anomalyFilter === "ANOMALY" &&
-          log.isAnomaly === true) ||
-        (anomalyFilter === "NORMAL" &&
-          log.isAnomaly === false);
+        (
+          anomalyFilter === "ANOMALY" &&
+          log.isAnomaly === true
+        ) ||
+        (
+          anomalyFilter === "NORMAL" &&
+          log.isAnomaly === false
+        );
 
       return (
         matchesSearch &&
         matchesSeverity &&
         matchesAnomaly
       );
+
     }
   );
+
 
   // ========================================
   // RESET FILTERS
   // ========================================
 
   const resetFilters = () => {
+
     setSearch("");
     setSeverityFilter("ALL");
     setAnomalyFilter("ALL");
+
   };
+
 
   // ========================================
   // AI ANALYSIS
@@ -151,7 +205,27 @@ function App() {
       const updatedLog =
         result.data;
 
-      // Update log inside table
+
+      // ------------------------------------
+      // SAVE AI ANALYSIS IN SESSION STORAGE
+      // ------------------------------------
+
+      if (updatedLog.aiAnalysis) {
+
+        sessionStorage.setItem(
+          `ai-analysis-${updatedLog._id}`,
+          JSON.stringify(
+            updatedLog.aiAnalysis
+          )
+        );
+
+      }
+
+
+      // ------------------------------------
+      // UPDATE LOG TABLE
+      // ------------------------------------
+
       setLogs((currentLogs) =>
         currentLogs.map((log) =>
           log._id === updatedLog._id
@@ -160,10 +234,15 @@ function App() {
         )
       );
 
-      // Update selected detail
+
+      // ------------------------------------
+      // UPDATE SELECTED LOG
+      // ------------------------------------
+
       setSelectedLog(
         updatedLog
       );
+
 
     } catch (err) {
 
@@ -181,13 +260,16 @@ function App() {
       setAnalyzing(false);
 
     }
+
   };
+
 
   // ========================================
   // UI
   // ========================================
 
   return (
+
     <div className="app">
 
       {/* ==================================
@@ -211,11 +293,13 @@ function App() {
 
       </header>
 
+
       {/* ==================================
           MAIN
       ================================== */}
 
       <main className="container">
+
 
         {/* STATISTICS */}
 
@@ -223,11 +307,13 @@ function App() {
           logs={logs}
         />
 
+
         {/* ==================================
             FILTER TOOLBAR
         ================================== */}
 
         <div className="toolbar">
+
 
           {/* SEARCH */}
 
@@ -241,6 +327,7 @@ function App() {
               )
             }
           />
+
 
           {/* SEVERITY */}
 
@@ -275,6 +362,7 @@ function App() {
 
           </select>
 
+
           {/* ANOMALY */}
 
           <select
@@ -300,6 +388,7 @@ function App() {
 
           </select>
 
+
           {/* RESET */}
 
           <button
@@ -311,6 +400,7 @@ function App() {
 
         </div>
 
+
         {/* ==================================
             FILTER RESULT COUNT
         ================================== */}
@@ -320,18 +410,23 @@ function App() {
           <div className="result-count">
 
             Showing{" "}
+
             <strong>
               {filteredLogs.length}
-            </strong>{" "}
-            of{" "}
+            </strong>
+
+            {" "}of{" "}
+
             <strong>
               {logs.length}
-            </strong>{" "}
-            logs
+            </strong>
+
+            {" "}logs
 
           </div>
 
         )}
+
 
         {/* ==================================
             LOADING
@@ -345,6 +440,7 @@ function App() {
 
         )}
 
+
         {/* ==================================
             ERROR
         ================================== */}
@@ -356,6 +452,7 @@ function App() {
           </div>
 
         )}
+
 
         {/* ==================================
             LOG TABLE
@@ -373,6 +470,7 @@ function App() {
         )}
 
       </main>
+
 
       {/* ==================================
           LOG DETAILS
@@ -396,7 +494,9 @@ function App() {
       )}
 
     </div>
+
   );
+
 }
 
 export default App;
