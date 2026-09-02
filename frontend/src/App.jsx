@@ -59,49 +59,9 @@ function App() {
         const fetchedLogs =
           result.data || [];
 
-        // ------------------------------------
-        // RESTORE AI ANALYSIS FROM SESSION
-        // STORAGE
-        // ------------------------------------
-
-        const logsWithAnalysis =
-          fetchedLogs.map((log) => {
-
-            const savedAnalysis =
-              sessionStorage.getItem(
-                `ai-analysis-${log._id}`
-              );
-
-            if (savedAnalysis) {
-
-              try {
-
-                const aiAnalysis =
-                  JSON.parse(savedAnalysis);
-
-                return {
-                  ...log,
-                  aiAnalysis
-                };
-
-              } catch (error) {
-
-                console.error(
-                  "Failed to restore AI analysis:",
-                  error
-                );
-
-                return log;
-
-              }
-
-            }
-
-            return log;
-
-          });
-
-        setLogs(logsWithAnalysis);
+        // AI analysis is NOT restored.
+        // Logs are loaded fresh from the backend.
+        setLogs(fetchedLogs);
 
       } catch (err) {
 
@@ -207,23 +167,7 @@ function App() {
 
 
       // ------------------------------------
-      // SAVE AI ANALYSIS IN SESSION STORAGE
-      // ------------------------------------
-
-      if (updatedLog.aiAnalysis) {
-
-        sessionStorage.setItem(
-          `ai-analysis-${updatedLog._id}`,
-          JSON.stringify(
-            updatedLog.aiAnalysis
-          )
-        );
-
-      }
-
-
-      // ------------------------------------
-      // UPDATE LOG TABLE
+      // UPDATE LOG TABLE TEMPORARILY
       // ------------------------------------
 
       setLogs((currentLogs) =>
