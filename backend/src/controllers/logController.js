@@ -35,6 +35,7 @@ const getLogs = async (req, res) => {
   }
 };
 
+
 // =========================================
 // GET SINGLE LOG
 // =========================================
@@ -72,6 +73,7 @@ const getLogById = async (req, res) => {
     });
   }
 };
+
 
 // =========================================
 // GET STATISTICS
@@ -129,6 +131,7 @@ const getStats = async (req, res) => {
   }
 };
 
+
 // =========================================
 // ANALYZE ANOMALY WITH AI
 // =========================================
@@ -174,7 +177,7 @@ const analyzeLogWithAI = async (req, res) => {
     }
 
     // ---------------------------------------
-    // Call AI
+    // Call Gemini AI
     // ---------------------------------------
 
     console.log(
@@ -185,36 +188,46 @@ const analyzeLogWithAI = async (req, res) => {
       await analyzeAnomaly(log);
 
     // ---------------------------------------
-    // Save AI response
+    // IMPORTANT
+    // DO NOT SAVE AI ANALYSIS TO MONGODB
     // ---------------------------------------
 
-    log.aiExplanation =
-      aiResult.explanation;
+    const temporaryLog = {
 
-    log.likelyRootCause =
-      aiResult.likelyRootCause;
+      ...log.toObject(),
 
-    log.recommendedNextStep =
-      aiResult.recommendedNextStep;
+      aiExplanation:
+        aiResult.explanation,
 
-    log.aiAnalysisStatus =
-      "ANALYZED";
+      likelyRootCause:
+        aiResult.likelyRootCause,
 
-    await log.save();
+      recommendedNextStep:
+        aiResult.recommendedNextStep,
+
+      aiAnalysisStatus:
+        "ANALYZED"
+
+    };
 
     console.log(
-      "AI analysis saved successfully"
+      "AI analysis generated temporarily"
     );
 
     // ---------------------------------------
-    // Return updated log
+    // RETURN TEMPORARY RESULT
     // ---------------------------------------
 
     return res.status(200).json({
+
       success: true,
+
       message:
         "AI analysis completed successfully",
-      data: log
+
+      data:
+        temporaryLog
+
     });
 
   } catch (error) {
@@ -225,38 +238,23 @@ const analyzeLogWithAI = async (req, res) => {
     );
 
     // ---------------------------------------
-    // Try to mark analysis as failed
+    // DO NOT SAVE FAILED STATUS TO DATABASE
     // ---------------------------------------
 
-    try {
-
-      if (req.params.id) {
-
-        await Log.findByIdAndUpdate(
-          req.params.id,
-          {
-            aiAnalysisStatus: "FAILED"
-          }
-        );
-
-      }
-
-    } catch (dbError) {
-
-      console.error(
-        "Could not update AI status:",
-        dbError.message
-      );
-
-    }
-
     return res.status(500).json({
+
       success: false,
-      message: "AI analysis failed",
-      error: error.message
+
+      message:
+        "AI analysis failed",
+
+      error:
+        error.message
+
     });
   }
 };
+
 
 // =========================================
 // EXPORT CONTROLLERS
